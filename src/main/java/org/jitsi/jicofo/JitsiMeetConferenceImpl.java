@@ -2357,6 +2357,83 @@ public class JitsiMeetConferenceImpl
     }
 
     /**
+     * Handles mute request sent from participants.
+     * @param fromJid MUC jid of the participant that requested mute status
+     *                change.
+     * @param toBeVideoMutedJid MUC jid of the participant whose mute status will be
+     *                     changed(eventually).
+     * @param doVideoMute the new audio mute status to set.
+     * @return <tt>true</tt> if status has been set successfully.
+     */
+    boolean handleVideoMuteRequest(Jid fromJid,
+                              Jid toBeVideoMutedJid,
+                              boolean doVideoMute)
+    {
+        Participant principal = findParticipantForRoomJid(fromJid);
+        if (principal == null)
+        {
+            logger.warn(
+                    "Failed to perform video mute operation - " + fromJid
+                            +" not exists in the conference.");
+            return false;
+        }
+        // Only moderators can mute others
+        if (!fromJid.equals(toBeVideoMutedJid)
+                && ChatRoomMemberRole.MODERATOR.compareTo(
+                principal.getChatMember().getRole()) < 0)
+        {
+            logger.warn(
+                    "Permission denied for video mute operation from " + fromJid);
+            return false;
+        }
+
+        Participant participant = findParticipantForRoomJid(toBeVideoMutedJid);
+        if (participant == null)
+        {
+            logger.warn("Participant for jid: " + toBeVideoMutedJid + " not found");
+            return false;
+        }
+
+        // do not allow video unmuting other participants even for the moderator
+        if (!doVideoMute && !fromJid.equals(toBeVideoMutedJid))
+        {
+            logger.warn("Blocking an unmute request (jid not the same).");
+            return false;
+        }
+
+        if (doVideoMute
+                && participant.isSipGateway())
+        {
+            logger.warn("Blocking video mute request to jigasi. " +
+                    "VideoMuting SIP participants is disabled.");
+            return false;
+        }
+
+
+        if (doVideoMute && participant.isJibri())
+        {
+            logger.warn("Blocking video mute request to jibri. ");
+            return false;
+        }
+
+        logger.info(
+                "Will video " + (doVideoMute ? "mute" : "unmute")
+                        + " " + toBeVideoMutedJid + " on behalf of " + fromJid);
+
+        BridgeSession bridgeSession = findBridgeSession(participant);
+        boolean succeeded
+                = bridgeSession != null
+                && bridgeSession.colibriConference.videoMuteParticipant(
+                participant.getColibriChannelsInfo(), doVideoMute);
+
+        if (succeeded)
+        {
+            participant.setMuted(doVideoMute);
+        }
+
+        return succeeded;
+    }
+    /**
      * Returns current participants count. A participant is chat member who has
      * some videobridge and media state assigned(not just raw chat room member).
      * For example chat member which belongs to the focus never becomes

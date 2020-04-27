@@ -918,6 +918,68 @@ public class ColibriConferenceImpl
     }
 
     /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean videoMuteParticipant(ColibriConferenceIQ channelsInfo,
+                                   boolean videoMute)
+    {
+        if (checkIfDisposed("videoMuteParticipant"))
+        {
+            return false;
+        }
+
+        ColibriConferenceIQ request = new ColibriConferenceIQ();
+        request.setID(conferenceState.getID());
+        request.setName(conferenceState.getName());
+
+        ColibriConferenceIQ.Content videoContent
+                = channelsInfo.getContent("video");
+
+        if (videoContent == null || StringUtils.isNullOrEmpty(request.getID()))
+        {
+            logger.error("Failed to mute - no audio content." +
+                    " Conf ID: " + request.getID());
+            return false;
+        }
+
+        ColibriConferenceIQ.Content requestContent
+                = new ColibriConferenceIQ.Content(videoContent.getName());
+
+        for (ColibriConferenceIQ.Channel channel : videoContent.getChannels())
+        {
+            ColibriConferenceIQ.Channel requestChannel
+                    = new ColibriConferenceIQ.Channel();
+
+            requestChannel.setID(channel.getID());
+
+            requestChannel.setDirection(
+                    videoMute ? MediaDirection.SENDONLY.toString()
+                            : MediaDirection.SENDRECV.toString());
+
+            requestContent.addChannel(requestChannel);
+        }
+
+        if (requestContent.getChannelCount() == 0)
+        {
+            logger.error("Failed to mute - no channels to modify." +
+                    " ConfID:" + request.getID());
+            return false;
+        }
+
+        request.setType(IQ.Type.set);
+        request.setTo(jitsiVideobridge);
+
+        request.addContent(requestContent);
+
+        connection.sendStanza(request);
+
+        // FIXME wait for response and set local status
+
+        return true;
+    }
+
+    /**
      * Sets world readable name that identifies the conference.
      * @param name the new name.
      */

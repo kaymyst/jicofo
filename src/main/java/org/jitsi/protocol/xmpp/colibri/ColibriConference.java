@@ -332,6 +332,18 @@ public interface ColibriConference
     boolean muteParticipant(ColibriConferenceIQ channelsInfo, boolean mute);
 
     /**
+     * Mutes video channels described in given IQ by changing their media
+     * direction to {@link org.jitsi.service.neomedia.MediaDirection#SENDONLY}.
+     * @param channelsInfo the IQ that describes the channels to be video muted.
+     * @param videoMute <tt>true</tt> to mute or <tt>false</tt> to unmute video
+     * channels described in <tt>channelsInfo</tt>.
+     * @return <tt>true</tt> if the operation has succeeded or <tt>false</tt>
+     * otherwise.
+     */
+    boolean videoMuteParticipant(ColibriConferenceIQ channelsInfo, boolean videoMute);
+
+
+    /**
      * Disposes of any resources allocated by this instance. Once disposed this
      * instance must not be used anymore.
      */

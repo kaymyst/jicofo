@@ -56,6 +56,7 @@ public class MeetExtensionsHandler
     private XmppConnection connection;
 
     private MuteIqHandler muteIqHandler;
+    private VideoMuteIqHandler videoMuteIqHandler;
     private DialIqHandler dialIqHandler;
 
     /**
@@ -103,6 +104,24 @@ public class MeetExtensionsHandler
         public IQ handleIQRequest(IQ iqRequest)
         {
             return handleMuteIq((MuteIq) iqRequest);
+        }
+    }
+
+    private class VideoMuteIqHandler extends AbstractIqRequestHandler
+    {
+        VideoMuteIqHandler()
+        {
+            super(
+                    VideoMuteIq.ELEMENT_NAME,
+                    VideoMuteIq.NAMESPACE,
+                    IQ.Type.set,
+                    Mode.sync);
+        }
+
+        @Override
+        public IQ handleIQRequest(IQ iqRequest)
+        {
+            return handleVideoMuteIq((VideoMuteIq) iqRequest);
         }
     }
 
@@ -192,6 +211,54 @@ public class MeetExtensionsHandler
             result = IQ.createErrorResponse(
                 muteIq,
                 XMPPError.getBuilder(XMPPError.Condition.internal_server_error));
+        }
+
+        return result;
+    }
+
+    private IQ handleVideoMuteIq(VideoMuteIq videoMuteIq)
+    {
+        Boolean doVideoMute = videoMuteIq.getVideoMute();
+        Jid jid = videoMuteIq.getJid();
+
+        if (doVideoMute == null || jid == null)
+        {
+            return IQ.createErrorResponse(videoMuteIq, XMPPError.getBuilder(
+                    XMPPError.Condition.item_not_found));
+        }
+
+        Jid from = videoMuteIq.getFrom();
+        JitsiMeetConferenceImpl conference = getConferenceForMucJid(from);
+        if (conference == null)
+        {
+            logger.debug("VideoMute error: room not found for JID: " + from);
+            return IQ.createErrorResponse(videoMuteIq, XMPPError.getBuilder(
+                    XMPPError.Condition.item_not_found));
+        }
+
+        IQ result;
+
+        if (conference.handleVideoMuteRequest(videoMuteIq.getFrom(), jid, doVideoMute))
+        {
+            result = IQ.createResultIQ(videoMuteIq);
+
+            if (!videoMuteIq.getFrom().equals(jid))
+            {
+                VideoMuteIq videoMuteStatusUpdate = new VideoMuteIq();
+                videoMuteStatusUpdate.setActor(from);
+                videoMuteStatusUpdate.setType(IQ.Type.set);
+                videoMuteStatusUpdate.setTo(jid);
+
+                videoMuteStatusUpdate.setVideoMute(doVideoMute);
+
+                connection.sendStanza(videoMuteStatusUpdate);
+            }
+        }
+        else
+        {
+            result = IQ.createErrorResponse(
+                    videoMuteIq,
+                    XMPPError.getBuilder(XMPPError.Condition.internal_server_error));
         }
 
         return result;
