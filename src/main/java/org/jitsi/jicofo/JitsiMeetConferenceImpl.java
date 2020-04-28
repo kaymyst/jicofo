@@ -2428,7 +2428,7 @@ public class JitsiMeetConferenceImpl
 
         if (succeeded)
         {
-            participant.setMuted(doVideoMute);
+            participant.setVideoMuted(doVideoMute);
         }
 
         return succeeded;

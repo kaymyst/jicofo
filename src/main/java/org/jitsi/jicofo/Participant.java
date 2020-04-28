@@ -108,6 +108,11 @@ public class Participant
     private boolean mutedStatus;
 
     /**
+     * Remembers participant's video muted status.
+     */
+    private boolean videoMutedStatus;
+
+    /**
      * Participant's display name.
      */
     private String displayName = null;
@@ -293,6 +298,15 @@ public class Participant
     public void setMuted(boolean mutedStatus)
     {
         this.mutedStatus = mutedStatus;
+    }
+
+    /**
+     * Sets muted status of this participant.
+     * @param videoMutedStatus new muted status to set.
+     */
+    public void setVideoMuted(boolean videoMutedStatus)
+    {
+        this.videoMutedStatus = videoMutedStatus;
     }
 
     /**

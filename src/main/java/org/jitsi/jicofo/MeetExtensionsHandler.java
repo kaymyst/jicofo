@@ -68,7 +68,7 @@ public class MeetExtensionsHandler
     public MeetExtensionsHandler(FocusManager focusManager)
     {
         this.focusManager = focusManager;
-
+        VideoMuteIqProvider.registerVideoMuteIqProvider();
         MuteIqProvider.registerMuteIqProvider();
         new RayoIqProvider().registerRayoIQs();
         StartMutedProvider.registerStartMutedProvider();
@@ -85,8 +85,10 @@ public class MeetExtensionsHandler
 
         muteIqHandler = new MuteIqHandler();
         dialIqHandler = new DialIqHandler();
+        videoMuteIqHandler = new VideoMuteIqHandler();
         connection.registerIQRequestHandler(muteIqHandler);
         connection.registerIQRequestHandler(dialIqHandler);
+        connection.registerIQRequestHandler(videoMuteIqHandler);
     }
 
     private class MuteIqHandler extends AbstractIqRequestHandler
@@ -154,6 +156,7 @@ public class MeetExtensionsHandler
         {
             connection.unregisterIQRequestHandler(muteIqHandler);
             connection.unregisterIQRequestHandler(dialIqHandler);
+            connection.unregisterIQRequestHandler(videoMuteIqHandler);
             connection = null;
         }
     }
